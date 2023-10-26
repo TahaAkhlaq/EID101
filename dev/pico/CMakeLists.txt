@@ -102,3 +102,7 @@ make_exec(multi_lidar_test tests/multi_lidar_test.cpp)
 # Lessons
 make_exec(helloworld lessons/01/helloworld.cpp)
 # make_exec(debug lessons/01/debug.cpp)
+
+#Relevant CMake Files
+make_exec(servowithpot using-robot-examples/servowithpot.cpp)
+
