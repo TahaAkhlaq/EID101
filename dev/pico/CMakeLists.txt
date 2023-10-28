@@ -9,9 +9,12 @@ project(rcc_pico_dev C CXX ASM)
 pico_sdk_init()
 
 add_subdirectory(include)
+# added my own library
+add_subdirectory(algorithms)
 add_subdirectory(../../lib lib)
 add_subdirectory(sensors)
 add_subdirectory(util)
+
 
 macro(make_exec exec_name exec_dir)
     add_executable(${exec_name} ${exec_dir})
@@ -51,6 +54,7 @@ macro(make_exec exec_name exec_dir)
                             ${PICO_SDK_PATH}
                             wireless/include #TODO: Turn into CMake compatible directory (lib)
                             include
+                            algorithms
 
     )
 
@@ -65,6 +69,8 @@ macro(make_exec exec_name exec_dir)
                             hardware_i2c
                             sensors
                             util
+                            line_following
+                            algo1
     )
 
 
@@ -106,3 +112,7 @@ make_exec(helloworld lessons/01/helloworld.cpp)
 #Relevant CMake Files
 make_exec(servowithpot using-robot-examples/servowithpot.cpp)
 make_exec(led using-robot-examples/led.cpp)
+make_exec(libtest tests/libtest.cpp)
+
+
+make_exec(hello algorithms/hello.cpp)
