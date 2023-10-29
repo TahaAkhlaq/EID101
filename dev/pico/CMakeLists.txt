@@ -116,3 +116,4 @@ make_exec(libtest tests/libtest.cpp)
 
 
 make_exec(hello algorithms/hello.cpp)
+make_exec(rotate algorithms/rotate.cpp)

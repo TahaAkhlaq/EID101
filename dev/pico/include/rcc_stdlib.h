@@ -30,6 +30,7 @@
 // include here and add to Cmake in algorithms and add to main Cmake then include stdlib.h in the main.c file 
 #include "algorithms/hello.h"
 
+#include "algorithms/rotate.h"
 
 
 #define ARRAYSIZE(X) (sizeof(X) / sizeof((X)[0]))
