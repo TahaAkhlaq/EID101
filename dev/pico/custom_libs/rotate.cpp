@@ -1,12 +1,12 @@
 #include "rotate.h"
-#include <stdio.h>
+#include "rcc_stdlib.h"
 
 using namespace std;
 
-void rotate() {
+void rotate (int numTurns) {
     stdio_init_all();
-    sleep_ms(100);
-    //motor using 100 sleep, imu uses 1500 sleep, odom uses 1000 sleep, so which one do I use?
+    sleep_ms(1000);
+    //motor using 100 sleep, imu uses 1500 sleep, odom uses 1000 sleep, so which one do I use? - just stick to 1000
     cyw43_arch_init();
     cyw43_arch_gpio_put(0, true); // LED on
 
@@ -49,7 +49,7 @@ void rotate() {
         // Calculate the error between the target and current angles
         float angleError = targetAngle - currentAngle;
 
-        // Set motor speeds to achieve the rotation
+        // Set the motor speeds to rotate 90 degrees
         int motorSpeed = static_cast<int>(angleError * Kp); // Adjust Kp as needed
         MotorPower(&motors, -motorSpeed, motorSpeed); // Rotate the robot
 

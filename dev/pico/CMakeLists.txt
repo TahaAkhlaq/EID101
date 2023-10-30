@@ -9,11 +9,13 @@ project(rcc_pico_dev C CXX ASM)
 pico_sdk_init()
 
 add_subdirectory(include)
-# added my own library
-add_subdirectory(algorithms)
 add_subdirectory(../../lib lib)
 add_subdirectory(sensors)
 add_subdirectory(util)
+
+# added my own library
+add_subdirectory(algorithms/drive)
+add_subdirectory(algorithms/rotate)
 
 
 macro(make_exec exec_name exec_dir)
@@ -105,15 +107,7 @@ endmacro()
 # make_exec(back_emf_test tests/back_emf_test.cpp)
 make_exec(multi_lidar_test tests/multi_lidar_test.cpp)
 
-# Lessons
-make_exec(helloworld lessons/01/helloworld.cpp)
 # make_exec(debug lessons/01/debug.cpp)
 
 #Relevant CMake Files
-make_exec(servowithpot using-robot-examples/servowithpot.cpp)
-make_exec(led using-robot-examples/led.cpp)
-make_exec(libtest tests/libtest.cpp)
-
-
-make_exec(hello algorithms/hello.cpp)
-make_exec(rotate algorithms/rotate.cpp)
+make_exec(main algorithms/main.cpp)

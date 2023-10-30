@@ -27,10 +27,8 @@
 #include "util/differentiator.h"
 
 // Custom Libraries
-// include here and add to Cmake in algorithms and add to main Cmake then include stdlib.h in the main.c file 
-#include "algorithms/hello.h"
-
-#include "algorithms/rotate.h"
+// include here and add to Cmake in custom_libs and add to main Cmake then include stdlib.h in the main.c file 
+#include "custom_libs/rotate.h"
 
 
 #define ARRAYSIZE(X) (sizeof(X) / sizeof((X)[0]))
