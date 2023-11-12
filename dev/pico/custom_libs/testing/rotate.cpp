@@ -1,7 +1,18 @@
 #include "rotate.h"
-#include "rcc_stdlib.h"
+//#include "rcc_stdlib.h"
+
+
 
 using namespace std;
+
+
+void rotate(int *x) {
+    
+}
+
+void rotate(VL530X *lidar /*int numTurns*/) {
+
+}
 
 void rotate (int numTurns) {
     stdio_init_all();

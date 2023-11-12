@@ -28,15 +28,14 @@
 
 // Custom Libraries
 // include here and add to Cmake in custom_libs and add to main Cmake then include stdlib.h in the main.c file 
-#include "custom_libs/rotate.h"
-
+//#include "custom_libs/rotate.h"
+#include "custom_libs/pins.h"
 
 #define ARRAYSIZE(X) (sizeof(X) / sizeof((X)[0]))
 
 // Potentiometer Init
 void rcc_init_potentiometer(void)
 {
-
     adc_init();
     adc_gpio_init(RCC_POTENTIOMETER);
     adc_select_input(2);

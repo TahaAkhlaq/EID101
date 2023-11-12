@@ -7,10 +7,12 @@
  * convert the "ticks" value into a distance travelled.
  * We know the following about the robot and the encoder wheels.
  * Diameter = 80mm
- * Encoder Wheel # slots = 40
+ * Encoder Wheel # slots = 40 -> 20 for EID
  * The Odom values increase for every RISING and FALLING edge!! 
- * Think about what this means. After 1 rotation how many counts will the 
- * Odom for that wheel be?
+ * Think about what this means. After 1 rotation how many counts will the = it counts double the number of slots 
+ * Odom for that wheel be? 
+ * 40 TPR because 20 slots 
+ * 80 mm diameter 
  * 
  * Use this information to create a function that will take in a # of ticks and
  * return a float representing the linear distance the wheel has travelled. 

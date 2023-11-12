@@ -1,3 +1,2 @@
-add_library(rotate rotate.h)
-set_target_properties(rotate PROPERTIES LINKER_LANGUAGE CXX)
-
+add_library(pins rotate.h)
+set_target_properties(pins PROPERTIES LINKER_LANGUAGE CXX)

@@ -14,8 +14,8 @@ add_subdirectory(sensors)
 add_subdirectory(util)
 
 # added my own library
-add_subdirectory(algorithms/drive)
-add_subdirectory(algorithms/rotate)
+#add_subdirectory(algorithms/drive)
+#add_subdirectory(algorithms/rotate)
 
 
 macro(make_exec exec_name exec_dir)
@@ -45,7 +45,7 @@ macro(make_exec exec_name exec_dir)
                             # CYW43_HOST_NAME="NAME_I_WANT MY PICO TO HAVE ON NETWORK"
 
                         # Pico Sdk
-                            PICO_MAX_SHARED_IRQ_HANDLERS=6 #IMPORTANT!! It seems default shared irq is 2, we need more.
+                            PICO_MAX_SHARED_IRQ_HANDLERS=10 #IMPORTANT!! It seems default shared irq is 2, we need more. //increased to 10 to avoid issues with interupts 
 
                         # Related to wireless capabilities
                             # PICO_CYW43_ARCH_BACKGROUND
@@ -71,8 +71,6 @@ macro(make_exec exec_name exec_dir)
                             hardware_i2c
                             sensors
                             util
-                            line_following
-                            algo1
     )
 
 
@@ -110,4 +108,8 @@ make_exec(multi_lidar_test tests/multi_lidar_test.cpp)
 # make_exec(debug lessons/01/debug.cpp)
 
 #Relevant CMake Files
-make_exec(main algorithms/main.cpp)
+#make_exec(main algorithms/main.cpp)
+# make_exec(imu algorithms/imu.cpp)
+# make_exec(turn algorithms/turn.cpp)
+# make_exec(ir algorithms/ir.cpp)
+make_exec(ir_isr algorithms/ir_isr.cpp)
