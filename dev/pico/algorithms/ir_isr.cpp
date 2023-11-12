@@ -99,6 +99,9 @@ int main()
     cyw43_arch_init();
     cyw43_arch_gpio_put(0, true); //turns on LED
 
+    //Pushbutton setup
+    rcc_init_pushbutton(); //for debugging purposes
+
     //Motors setup
     Motor motors; //struct setup
     MotorInit(&motors, RCC_ENA, RCC_ENB, 1000); //setup 
@@ -236,10 +239,22 @@ int main()
             case FORWARD:
                 MotorPower(&motors, 100, 100); //both at full power
 
-                //Object
-                if(distance <= target_distance){
+                //Object Detection
+                if(distance <= target_distance)
+                {
+                    cyw43_arch_gpio_put(0, !cyw43_arch_gpio_get(0)); //blinks LED (indicating detected object)
                     MotorPower(&motors, -100, -100); //reverse
-                    robot_state = FORWARD;
+
+                    //Reset Wheel Encoder Counts
+                    right.setZero();
+                    left.setZero();
+
+                    if(leftDistance >= 25 && rightDistance >= 25) //go backward about an inch
+                    {
+                        MotorPower(&motors, 0, 0); //stop
+                        robot_state = FORWARD;
+
+                    }
                 }
 
                 //Transition condition
@@ -285,12 +300,19 @@ int main()
             case JUNCTION:
                 MotorPower(&motors, 100, 100); //move forward
 
+                //Reset Wheel Encoder Counts
+                right.setZero();
+                left.setZero();
+
                 //Transition condition
                 if(leftDistance >= 25 && rightDistance >= 25) //go forward about an inch
                 {
                     MotorPower(&motors, 0, 0); //stop
+
                     if (leftIR_data == false && centerIR_data == false && rightIR_data == false) //if all are on white now
                     {
+                        cyw43_arch_gpio_put(0, !cyw43_arch_gpio_get(0)); //blinks LED (indicating stopped at Junction)
+                        //replace this to stop at junction, but test this out to see if it works
                         MotorPower(&motors, 50, -50); //turn right
                         if (abs(theta) >= turn_around) //keep turning until it has turned 180 degrees
                         {
