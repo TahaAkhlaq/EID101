@@ -107,11 +107,17 @@ int main()
     MotorInit(&motors, RCC_ENA, RCC_ENB, 1000); //setup 
     MotorsOn(&motors); //enable PWM
 
+    //For IMU and Lidar
+    rcc_init_i2c();     
+
     //IMU setup
-    rcc_init_i2c(); 
     MPU6050 imu; //class
     imu.begin(i2c1); //adds to i2c1
     imu.calibrate(); //hold robot still
+
+    //Lidar Setup
+    VL53L0X lidar; //class 
+    rcc_init_lidar(&lidar); //setup lidar
 
     //Odom setup
     Left_Odom left;
@@ -121,10 +127,6 @@ int main()
     float leftDistance = linear_distance(left.getCount());
     float rightDistance = linear_distance(right.getCount());
 
-    //Lidar Setup
-    rcc_init_i2c(); //setup pico i2c
-    VL53L0X lidar; //class 
-    rcc_init_lidar(&lidar); //setup lidar
 
     //IR Sensors Setup
     init_ir(); 
@@ -143,12 +145,15 @@ int main()
     gpio_set_irq_enabled(LEFT_IR_SENSOR, left_ir_sensor_events, true);
     gpio_add_raw_irq_handler(LEFT_IR_SENSOR, &left_ir_sensor_isr);
 
+
+    //Object Detection
+    uint16_t distance; //lidar variable
+    uint16_t target_distance = 200;
+
+
     // State Machine Riemann Sum variables
     uint32_t current_time, previous_time;
     uint32_t duration = 1000000; // 1 second
-
-    //Object Distance
-    uint16_t target_distance = 200;
 
     //Starting Angle
     double theta = 0.0;
@@ -164,6 +169,9 @@ int main()
 
     //Initial Calculus State
     imu_state_t imu_state = DWELL;
+
+    // Define blink_count as a global variable for indicating Junction and Obstacle
+    int blink_count = 5;
 
     while(true)
     {   
@@ -198,7 +206,8 @@ int main()
                 {
                     imu_state = INTEGRATE;
                 }
-                break;
+
+            break;
 
             //riemann sum 
             case INTEGRATE:      
@@ -207,13 +216,13 @@ int main()
 
                 imu_state = DWELL; //go back to initial state
                 previous_time = current_time; //update time
-                break; 
+
+            break; 
         }
 
 
         //Switch for Robot_State
-        //State 111 - STOP
-        switch(robot_state) //Intial State is Stop
+        switch(robot_state) //Intial State is WAIT
         {
             case WAIT:
                 MotorPower(&motors, 0, 0); //stop
@@ -221,7 +230,7 @@ int main()
                 //Transition condition
                 if (leftIR_data == false && centerIR_data == true && rightIR_data == false) //if the center gpio is on the black line
                 {
-                    robot_state = FORWARD;
+                    robot_state = FORWARD; 
                     theta = 0.0;
                 }
 
@@ -230,24 +239,32 @@ int main()
                     robot_state = WAIT;
                 }
 
-                else 
+                else //anything else
                 {
                     robot_state = WAIT;
                 }
-                break;
 
-            case FORWARD:
+            break;
+
+            case FORWARD: //010
                 MotorPower(&motors, 100, 100); //both at full power
 
                 //Object Detection
                 if(distance <= target_distance)
                 {
-                    cyw43_arch_gpio_put(0, !cyw43_arch_gpio_get(0)); //blinks LED (indicating detected object)
-                    MotorPower(&motors, -100, -100); //reverse
+                    MotorPower(&motors, 0, 0);//stop
 
+                    for (int i = 0; i < blink_count; i++) //blink LED 5 times
+                    {
+                    cyw43_arch_gpio_put(0, !cyw43_arch_gpio_get(0)); //blinks LED (indicating detected object)
+                    sleep_ms(300);
+                    }
+                
                     //Reset Wheel Encoder Counts
                     right.setZero();
                     left.setZero();
+
+                    MotorPower(&motors, -100, -100); //reverse
 
                     if(leftDistance >= 25 && rightDistance >= 25) //go backward about an inch
                     {
@@ -275,9 +292,15 @@ int main()
                     robot_state = JUNCTION;
                     theta = 0.0;
                 }
-                break;
 
-            case LEFT:
+                else //anything else
+                {
+                    robot_state = WAIT;
+                }
+
+            break;
+
+            case LEFT: //110
                 MotorPower(&motors, -50, 50); //turn left
 
                 //Transition condition
@@ -285,9 +308,10 @@ int main()
                 {
                     robot_state = WAIT;
                 }
-                break;
+
+            break;
             
-            case RIGHT:
+            case RIGHT: //011
                 MotorPower(&motors, 50, -50); //turn right
 
                 //Transition condition
@@ -295,14 +319,16 @@ int main()
                 {
                     robot_state = WAIT;
                 }
-                break;
+
+            break;
             
-            case JUNCTION:
-                MotorPower(&motors, 100, 100); //move forward
+            case JUNCTION: //111
 
                 //Reset Wheel Encoder Counts
                 right.setZero();
                 left.setZero();
+                
+                MotorPower(&motors, 100, 100); //move forward
 
                 //Transition condition
                 if(leftDistance >= 25 && rightDistance >= 25) //go forward about an inch
@@ -311,11 +337,27 @@ int main()
 
                     if (leftIR_data == false && centerIR_data == false && rightIR_data == false) //if all are on white now
                     {
-                        cyw43_arch_gpio_put(0, !cyw43_arch_gpio_get(0)); //blinks LED (indicating stopped at Junction)
+                       
+                        for (int i = 0; i < blink_count; i++) //blink LED 5 times
+                        {
+                            cyw43_arch_gpio_put(0, !cyw43_arch_gpio_get(0)); //blinks LED (indicating stopped at Junction)
+                            sleep_ms(300);
+                        }
+                        
                         //replace this to stop at junction, but test this out to see if it works
+
                         MotorPower(&motors, 50, -50); //turn right
                         if (abs(theta) >= turn_around) //keep turning until it has turned 180 degrees
                         {
+                           //Reset Wheel Encoder Counts
+                            right.setZero();
+                            left.setZero();
+                                
+                            MotorPower(&motors, 100, 100); //move forward
+
+                            //Transition condition
+                            if(leftDistance >= 25 && rightDistance >= 25) //go forward about an inch
+
                             robot_state = WAIT;
                         }
                     }
@@ -324,12 +366,21 @@ int main()
                         {
                         robot_state = STOP;
                         }
-                }
-                break;
+                    
+                    else //anything else
+                        {
+                    robot_state = WAIT;
+                        }
 
-            case STOP:
+                }
+
+            break;
+
+            case STOP: //111
+
                 MotorPower(&motors, 0, 0); //stop
-                break;
+
+            break;
         }
     }
 }

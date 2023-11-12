@@ -1,15 +1,14 @@
 #include "rcc_stdlib.h"
 using namespace std;
 
-//Turn State
-typedef enum {
-    FORWARD, 
-    LEFT,    
-    RIGHT,   
+//Robot States
+typedef enum { 
+    WAIT,    
+    TURN,   
     STOP     
 } robot_state_t;
 
-//Calculus State
+//IMU States
 typedef enum{
     DWELL,
     INTEGRATE
@@ -34,20 +33,20 @@ int main(void)
     imu.calibrate(); //hold robot still
 
     // State Machine Riemann Sum variables
-    uint32_t cur, prev;
+    uint32_t current_time, previous_time;
     uint32_t duration = 1000000; // 1 second
 
     //Starting Angle
     double theta = 0.0;
 
     //Turning Right and Left
-    double turn_degrees = 90.0;
+    double turn_degrees = 90.0; //may need to change this to 65.0
 
     //Intial Robot States
-    state_t robot_state = STOP;
+    robot_state_t robot_state = WAIT;
 
     //Initial Calculus State
-    integratorstate_t imu_state = DWELL;
+    imu_state_t imu_state = DWELL;
 
 
     while(true)
@@ -58,88 +57,37 @@ int main(void)
         //debugging
         cout << "theta: " << theta << "\n";
 
-        //State - STOP 
-        switch(robot_state) //Initial State is Stop
-            case STOP:
-            MotorPower(&motors, 0,0);
-
-            //CHANGE CODE TO USE SWITCH STATEMENTS
+        //Switch for IMU_State
+        switch(imu_state)
         {
-            MotorPower(&motors, 100, 100); //both at full power
+            case DWELL:
 
-            theta += imu.getAngVelZ()*duration/1000000.0;
+                //Transition condition
+                if(current_time - previous_time >= duration)
+                {
+                    imu_state = INTEGRATE;
+                }
+                break;
 
-            if(!centerIR_data && !rightIR_data)//RIGHT State - 011  //if NOT gpio (if gpio is low)
-            {
-                robot_state = RIGHT;
-                targetAngle = 90.0;
-                prev = cur; //Update time - is this needed here?
-            }
+            //riemann sum 
+            case INTEGRATE:      
+                
+                theta += imu.getAngVelZ()*duration/1000000.0; 
 
-            else if (!leftIR_data && !centerIR_data)//LEFT State - 110  //if NOT gpio (if gpio is low)
-            {
-                robot_state = LEFT;
-                targetAngle = -90.0;
-                prev = cur; //Update time - is this needed here?
-            }
-
-            else if (rightIR_data && centerIR_data && leftIR_data)//STOP State - 111  //if NOT gpio (if gpio is low)
-            {
-                robot_state = STOP;
-                targetAngle = 0;
-                prev = cur; //Update time - is this needed here?
-            }
+                imu_state = DWELL; //go back to initial state
+                previous_time = current_time; //update time
+                break; 
         }
 
-
-        //State 011 - RIGHT
-        if(robot_state == RIGHT) 
+        //Switch for Robot_State
+        switch(robot_state) //Intial State is WAIT
         {
-            MotorPower(&motors, 0, 100); //left at full power
-
-            theta += imu.getAngVelZ()*duration/1000000.0;
-
-            //Transition condition
-            if(!centerIR_data) //if the center gpio is low (on the black line)
-            {
-                robot_state = FORWARD;
-                targetAngle = 0 // is this needed here?
-                prev = cur; //Update time 
-            }
+            case WAIT:
+                MotorPower(&motors, 0, 0); //stop
+                sleep_ms(300);
+                robot_state = TURN;
+                theta = 0.0;
+            break;
         }
-
-        //State 110 - LEFT
-        if (robot_state == LEFT)
-        {
-            MotorPower(&motors, 100, 0); //right at full power
-
-            theta += imu.getAngVelZ()*duration/1000000.0;
-
-            //Transition condition
-            if(!centerIR_data) //if the center gpio is low (on the black line)
-            {
-                robot_state = FORWARD;
-                targetAngle = 0 // is this needed here?
-                prev = cur; //Update time
-            }
-        }
-
-        //State 111 - STOP
-        if (robot_state == STOP)
-        {
-            MotorPower(&motors, 0, 0); //stop
-
-            theta = theta + imu.getAngVelZ()*duration/1000000.0;
-
-        //Transition condition
-            if(!centerIR_data) //if the center gpio is low (on the black line)
-            {
-                robot_state = FORWARD;
-                targetAngle = 0 // is this needed here?
-                prev = cur; //Update time
-            }
-
-        }
-
     }
 }
