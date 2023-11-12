@@ -104,7 +104,7 @@ int main()
     MotorInit(&motors, RCC_ENA, RCC_ENB, 1000); //setup 
     MotorsOn(&motors); //enable PWM
 
-    // IMU setup
+    //IMU setup
     rcc_init_i2c(); 
     MPU6050 imu; //class
     imu.begin(i2c1); //adds to i2c1
@@ -117,6 +117,11 @@ int main()
     //Linear Distance
     float leftDistance = linear_distance(left.getCount());
     float rightDistance = linear_distance(right.getCount());
+
+    //Lidar Setup
+    rcc_init_i2c(); //setup pico i2c
+    VL53L0X lidar; //class 
+    rcc_init_lidar(&lidar); //setup lidar
 
     //IR Sensors Setup
     init_ir(); 
@@ -139,6 +144,9 @@ int main()
     uint32_t current_time, previous_time;
     uint32_t duration = 1000000; // 1 second
 
+    //Object Distance
+    uint16_t target_distance = 200;
+
     //Starting Angle
     double theta = 0.0;
 
@@ -159,19 +167,21 @@ int main()
         imu.update_pico(); //updates data
         current_time = time_us_32(); //update current time
 
+        distance = getFastReading(&lidar); // lidar reading
+
         // Read IR Sensor Data
-        //I am not sure if this logic works:
+        //True = Black Line
+        //False = White Background
         bool leftIR_data = gpio_get(LEFT_IR_SENSOR);       // Left IR sensor data (if left IR sensor is on the line)
         bool centerIR_data = gpio_get(CENTER_IR_SENSOR);   // Center IR sensor data (if center IR sensor is on the line)
         bool rightIR_data = gpio_get(RIGHT_IR_SENSOR);     // Right IR sensor data (if right IR sensor is on the line)
-        //True = Black Line
-        //False = White Background
 
 
         //For Debugging Purposes
         cout << "theta: " << theta << "\n"; //IMU
         cout << "left distance: " << leftDistance <<  " | right distance: " << rightDistance << "\n"; //Odom
         cout << leftIR_data << " | " << centerIR_data << " | " << rightIR_data << "\n"; //IR 
+        cout << "distance: " << distance << "\n"; //Lidar
         cout << "\n";
 
 
@@ -188,9 +198,9 @@ int main()
                 break;
 
             //riemann sum 
-            case INTEGRATE:
-
-                theta = theta + imu.getAngVelZ()*duration/1000000.0;
+            case INTEGRATE:      
+                
+                theta += imu.getAngVelZ()*duration/1000000.0; 
 
                 imu_state = DWELL; //go back to initial state
                 previous_time = current_time; //update time
@@ -225,6 +235,12 @@ int main()
 
             case FORWARD:
                 MotorPower(&motors, 100, 100); //both at full power
+
+                //Object
+                if(distance <= target_distance){
+                    MotorPower(&motors, -100, -100); //reverse
+                    robot_state = FORWARD;
+                }
 
                 //Transition condition
                 if (leftIR_data == true && centerIR_data == true && rightIR_data == false) //if the left & center gpio on the black line
@@ -270,7 +286,7 @@ int main()
                 MotorPower(&motors, 100, 100); //move forward
 
                 //Transition condition
-                if(leftDistance >= 25 && rightDistance >= 25)
+                if(leftDistance >= 25 && rightDistance >= 25) //go forward about an inch
                 {
                     MotorPower(&motors, 0, 0); //stop
                     if (leftIR_data == false && centerIR_data == false && rightIR_data == false) //if all are on white now
