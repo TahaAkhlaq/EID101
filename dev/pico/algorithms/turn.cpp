@@ -52,7 +52,7 @@ int main(void)
     while(true)
     {   
         imu.update_pico(); //updates data
-        cur = time_us_32(); //update current time
+        current_time = time_us_32(); //update current time
 
         //debugging
         cout << "theta: " << theta << "\n";
@@ -83,11 +83,32 @@ int main(void)
         switch(robot_state) //Intial State is WAIT
         {
             case WAIT:
+
                 MotorPower(&motors, 0, 0); //stop
                 sleep_ms(300);
+
                 robot_state = TURN;
                 theta = 0.0;
+
             break;
+
+            case TURN:
+
+                MotorPower(&motors, 50, -50); //rotate right
+
+                if((3*theta) >= turn_degrees) //rotate right 3 times
+                { 
+                    robot_state = STOP;
+                }
+
+            break; 
+
+            case STOP:
+
+                MotorPower(&motors, 0, 0);
+
+            break;
+            
         }
     }
 }

@@ -291,6 +291,7 @@ int main()
                 {   
                     robot_state = JUNCTION;
                     theta = 0.0;
+                    //can add reset wheel encoders here before going into junction
                 }
 
                 else //anything else
@@ -357,8 +358,10 @@ int main()
 
                             //Transition condition
                             if(leftDistance >= 25 && rightDistance >= 25) //go forward about an inch
-
-                            robot_state = WAIT;
+                            {
+                                robot_state = WAIT;
+                            }
+                           
                         }
                     }
 

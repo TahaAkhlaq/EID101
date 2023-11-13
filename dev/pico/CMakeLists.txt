@@ -108,8 +108,6 @@ make_exec(multi_lidar_test tests/multi_lidar_test.cpp)
 # make_exec(debug lessons/01/debug.cpp)
 
 #Relevant CMake Files
-#make_exec(main algorithms/main.cpp)
-# make_exec(imu algorithms/imu.cpp)
-# make_exec(turn algorithms/turn.cpp)
-# make_exec(ir algorithms/ir.cpp)
 make_exec(line_following algorithms/line_following.cpp)
+make_exec(turn algorithms/turn.cpp)
+make_exec(move algorithms/move.cpp)
