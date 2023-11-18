@@ -35,7 +35,6 @@ float linear_distance(unsigned long count)
   return WHEEL_DIAM*PI/count; //I defined WHEEL_DIAM and PI globally 
 }
 
-
 int main()
 {
     stdio_init_all();    

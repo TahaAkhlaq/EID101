@@ -4,11 +4,11 @@ using namespace std;
 int main(void)
 {
     stdio_init_all();
+    sleep_ms(1500);
     cyw43_arch_init();
-    rcc_init_potentiometer(); //setup potentiometer on ADC2
-    sleep_ms(1000);   
+    cyw43_arch_gpio_put(0,1); //led on
 
-    cyw43_arch_gpio_put(0, true); //led on
+    rcc_init_potentiometer(); //setup potentiometer on ADC2  
 
     Servo s3; //struct
     ServoInit(&s3, 18, false, 50); //attach to pin 18

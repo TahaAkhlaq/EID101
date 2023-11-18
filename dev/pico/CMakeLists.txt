@@ -112,8 +112,14 @@ make_exec(multi_lidar_test tests/multi_lidar_test.cpp)
 make_exec(line_following2 algorithms/line_following2.cpp)
 make_exec(turn algorithms/turn.cpp)
 make_exec(move algorithms/move.cpp)
+make_exec(object algorithms/object.cpp)
 
-
+#Examples
 make_exec(turningwithimu algorithms/examples/turningwithimu.cpp)
 
+#Tests
+make_exec(servowithpot using-robot-examples/servowithpot.cpp)
+make_exec(servo_pot_test tests/servo_pot_test.cpp)
+make_exec(lidar using-robot-examples/lidar.cpp)
 make_exec(motors using-robot-examples/motors.cpp)
+make_exec(led using-robot-examples/led.cpp)
