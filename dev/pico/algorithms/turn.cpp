@@ -4,8 +4,7 @@ using namespace std;
 //Robot States
 typedef enum { 
     WAIT,    
-    TURN,   
-    STOP     
+    TURN,        
 } robot_state_t;
 
 //IMU States
@@ -20,6 +19,8 @@ int main(void)
     sleep_ms(1500);
     cyw43_arch_init();
     cyw43_arch_gpio_put(0, true); //led on
+
+    rcc_init_pushbutton(); //set up button
 
     //Motors setup
     Motor motors; //struct setup
@@ -40,14 +41,14 @@ int main(void)
     double theta = 0.0;
 
     //Turning Right and Left
-    double turn_degrees = 90.0; //may need to change this to 65.0
+    const double turn_counterclockwise = 1 * 65.0; //may need to change this
+    const double turn_clockwise = 3 * -65.0; //may need to change this
 
     //Intial Robot States
     robot_state_t robot_state = WAIT;
 
     //Initial Calculus State
     imu_state_t imu_state = DWELL;
-
 
     while(true)
     {   
@@ -56,6 +57,37 @@ int main(void)
 
         //debugging
         cout << "theta: " << theta << "\n";
+        cout << robot_state << "\n\n";
+
+        //Switch for Robot_State
+        switch(robot_state) //Intial State is WAIT
+        {
+            case WAIT:
+
+                MotorPower(&motors, 0, 0); //stop
+                if(!gpio_get(RCC_PUSHBUTTON))
+                {
+                    theta = 0.0; 
+                    sleep_ms(300);
+                    robot_state = TURN;
+                }
+
+            break;
+
+            case TURN:
+
+                MotorPower(&motors, 0, 50); //rotate counterclockwise
+
+                if(theta >= turn_counterclockwise) //rotate 
+                { 
+                    MotorPower(&motors, 0, 0);
+                    sleep_ms(300);
+                    robot_state = WAIT;
+                }
+
+            break;
+            
+        }
 
         //Switch for IMU_State
         switch(imu_state)
@@ -68,7 +100,6 @@ int main(void)
                     imu_state = INTEGRATE;
                 }
                 break;
-
             //riemann sum 
             case INTEGRATE:      
                 
@@ -78,37 +109,49 @@ int main(void)
                 previous_time = current_time; //update time
                 break; 
         }
-
-        //Switch for Robot_State
-        switch(robot_state) //Intial State is WAIT
-        {
-            case WAIT:
-
-                MotorPower(&motors, 0, 0); //stop
-                sleep_ms(300);
-
-                robot_state = TURN;
-                theta = 0.0;
-
-            break;
-
-            case TURN:
-
-                MotorPower(&motors, 50, -50); //rotate right
-
-                if((3*theta) >= turn_degrees) //rotate right 3 times
-                { 
-                    robot_state = STOP;
-                }
-
-            break; 
-
-            case STOP:
-
-                MotorPower(&motors, 0, 0);
-
-            break;
-            
-        }
     }
 }
+
+
+// //Setup Right IR Sensor ISR 
+// void right_ir_sensor_isr(void)
+// {   
+//     // Check the isr reason for Right IR Sensor (pin, events)
+//     if(gpio_get_irq_event_mask(RIGHT_IR_SENSOR) & right_ir_sensor_events) {
+
+//         // Acknowledge the interrupt request (pin, events)
+//         gpio_acknowledge_irq(RIGHT_IR_SENSOR, right_ir_sensor_events);
+
+//         // Do something when ISR is activated
+//         right_ir_sensor_count++;
+//     }
+// }
+
+// //Setup Center IR Sensor ISR 
+// void center_ir_sensor_isr(void)
+// {   
+//     // Check the isr reason for Center IR Sensor (pin, events)
+//     if(gpio_get_irq_event_mask(CENTER_IR_SENSOR) & center_ir_sensor_events) {
+
+//         // Acknowledge the interrupt request (pin, events)
+//         gpio_acknowledge_irq(CENTER_IR_SENSOR, center_ir_sensor_events);
+
+//         // Do something when ISR is activated
+//         center_ir_sensor_count++;
+//     }
+// }
+
+// //Setup Left IR Sensor ISR 
+// void left_ir_sensor_isr(void)
+// {   
+//     // Check the isr reason for Left IR Sensor (pin, events)
+//     if(gpio_get_irq_event_mask(LEFT_IR_SENSOR) & left_ir_sensor_events) {
+
+//         // Acknowledge the interrupt request (pin, events)
+//         gpio_acknowledge_irq(LEFT_IR_SENSOR, left_ir_sensor_events);
+
+//         // Do something when ISR is activated
+//         left_ir_sensor_count++;
+//     }
+
+// }

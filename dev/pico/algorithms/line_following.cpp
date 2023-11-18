@@ -17,19 +17,6 @@ typedef enum{
     INTEGRATE
 }imu_state_t;
 
-//Define GPIO events that trigger the ISR
-
-//Right IR
-const uint32_t right_ir_sensor_events = GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL;
-volatile uint32_t right_ir_sensor_count = 0; //Volatile because value is edited in ISR
-
-//Center IR
-const uint32_t center_ir_sensor_events = GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL;
-volatile uint32_t center_ir_sensor_count = 0; //Volatile because value is edited in ISR
-
-//Left IR
-const uint32_t left_ir_sensor_events = GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL;
-volatile uint32_t left_ir_sensor_count = 0; //Volatile because value is edited in ISR
 
 //Intialize the GPIO Pins for the IR sensors
 void init_ir(void) {
@@ -40,49 +27,6 @@ void init_ir(void) {
     gpio_set_dir(LEFT_IR_SENSOR, false);      // Set the left IR sensor pin as input
     gpio_set_dir(CENTER_IR_SENSOR, false);    // Set the center IR sensor pin as input
     gpio_set_dir(RIGHT_IR_SENSOR, false);     // Set the right IR sensor pin as input
-}
-
-//Setup Right IR Sensor ISR 
-void right_ir_sensor_isr(void)
-{   
-    // Check the isr reason for Right IR Sensor (pin, events)
-    if(gpio_get_irq_event_mask(RIGHT_IR_SENSOR) & right_ir_sensor_events) {
-
-        // Acknowledge the interrupt request (pin, events)
-        gpio_acknowledge_irq(RIGHT_IR_SENSOR, right_ir_sensor_events);
-
-        // Do something when ISR is activated
-        right_ir_sensor_count++;
-    }
-}
-
-//Setup Center IR Sensor ISR 
-void center_ir_sensor_isr(void)
-{   
-    // Check the isr reason for Center IR Sensor (pin, events)
-    if(gpio_get_irq_event_mask(CENTER_IR_SENSOR) & center_ir_sensor_events) {
-
-        // Acknowledge the interrupt request (pin, events)
-        gpio_acknowledge_irq(CENTER_IR_SENSOR, center_ir_sensor_events);
-
-        // Do something when ISR is activated
-        center_ir_sensor_count++;
-    }
-}
-
-//Setup Left IR Sensor ISR 
-void left_ir_sensor_isr(void)
-{   
-    // Check the isr reason for Left IR Sensor (pin, events)
-    if(gpio_get_irq_event_mask(LEFT_IR_SENSOR) & left_ir_sensor_events) {
-
-        // Acknowledge the interrupt request (pin, events)
-        gpio_acknowledge_irq(LEFT_IR_SENSOR, left_ir_sensor_events);
-
-        // Do something when ISR is activated
-        left_ir_sensor_count++;
-    }
-
 }
 
 //Odom
@@ -100,7 +44,7 @@ int main()
     cyw43_arch_gpio_put(0, true); //turns on LED
 
     //Pushbutton setup
-    rcc_init_pushbutton(); //for debugging purposes
+    //rcc_init_pushbutton(); //for debugging purposes
 
     //Motors setup
     Motor motors; //struct setup
@@ -131,21 +75,6 @@ int main()
     //IR Sensors Setup
     init_ir(); 
 
-    // Setup GPIO pins as an interrupt pins with events for the IR Sensors
-
-    //Right
-    gpio_set_irq_enabled(RIGHT_IR_SENSOR, right_ir_sensor_events, true);
-    gpio_add_raw_irq_handler(RIGHT_IR_SENSOR, &right_ir_sensor_isr);
-    
-    //Center
-    gpio_set_irq_enabled(CENTER_IR_SENSOR, center_ir_sensor_events, true);
-    gpio_add_raw_irq_handler(CENTER_IR_SENSOR, &center_ir_sensor_isr);
-
-    //Left
-    gpio_set_irq_enabled(LEFT_IR_SENSOR, left_ir_sensor_events, true);
-    gpio_add_raw_irq_handler(LEFT_IR_SENSOR, &left_ir_sensor_isr);
-
-
     //Object Detection
     uint16_t distance; //lidar variable
     uint16_t target_distance = 200;
@@ -159,7 +88,8 @@ int main()
     double theta = 0.0;
 
     //Turning Right and Left
-    double turn_degrees = 90.0; //may need to change this to 65.0
+    double turn_right = 90.0; //may need to change this to 65.0
+    double tunr_left = -90.0; //may need to change this to 65.0
 
     //Turning Around
     double turn_around = 180.0; //may need to change this too depending on the value of turn_degrees
@@ -180,6 +110,9 @@ int main()
 
         distance = getFastReading(&lidar); // lidar reading
 
+        leftDistance = linear_distance(left.getCount());
+        rightDistance = linear_distance(right.getCount());
+
         // Read IR Sensor Data
         //True = Black Line
         //False = White Background
@@ -193,6 +126,7 @@ int main()
         cout << "left distance: " << leftDistance <<  " | right distance: " << rightDistance << "\n"; //Odom
         cout << leftIR_data << " | " << centerIR_data << " | " << rightIR_data << "\n"; //IR 
         cout << "distance: " << distance << "\n"; //Lidar
+        cout << robot_state << "\n";
         cout << "\n";
 
 
@@ -236,52 +170,62 @@ int main()
 
                 else if (leftIR_data == false && centerIR_data == false && rightIR_data == false) //all are on white
                 {
-                    robot_state = WAIT;
+                    robot_state = FORWARD;
+                    theta = 0.0;
                 }
-
-                else //anything else
-                {
-                    robot_state = WAIT;
-                }
-
+                
             break;
 
             case FORWARD: //010
-                MotorPower(&motors, 100, 100); //both at full power
+                MotorPower(&motors, 75, 75); //both at full power
 
                 //Object Detection
-                if(distance <= target_distance)
-                {
-                    MotorPower(&motors, 0, 0);//stop
+                // if(distance <= target_distance)
+                // {
+                //     MotorPower(&motors, 0, 0);//stop
 
-                    for (int i = 0; i < blink_count; i++) //blink LED 5 times
-                    {
-                    cyw43_arch_gpio_put(0, !cyw43_arch_gpio_get(0)); //blinks LED (indicating detected object)
-                    sleep_ms(300);
-                    }
+                //     for (int i = 0; i < blink_count; i++) //blink LED 5 times
+                //     {
+                //     cyw43_arch_gpio_put(0, !cyw43_arch_gpio_get(0)); //blinks LED (indicating detected object)
+                //     sleep_ms(300);
+                //     }
                 
-                    //Reset Wheel Encoder Counts
-                    right.setZero();
-                    left.setZero();
+                //     //Reset Wheel Encoder Counts
+                //     right.setZero();
+                //     left.setZero();
 
-                    MotorPower(&motors, -100, -100); //reverse
+                //     MotorPower(&motors, -100, -100); //reverse
 
-                    if(leftDistance >= 25 && rightDistance >= 25) //go backward about an inch
-                    {
-                        MotorPower(&motors, 0, 0); //stop
-                        robot_state = FORWARD;
+                //     if(leftDistance >= 25 && rightDistance >= 25) //go backward about an inch
+                //     {
+                //         MotorPower(&motors, 0, 0); //stop
+                //         robot_state = FORWARD;
 
-                    }
-                }
+                //     }
+                // }
 
                 //Transition condition
+
+
                 if (leftIR_data == true && centerIR_data == true && rightIR_data == false) //if the left & center gpio on the black line
+                {
+                    robot_state = LEFT;
+                    theta = 0.0;
+                }
+
+                if (leftIR_data == true && centerIR_data == false && rightIR_data == false) //if the left gpio on the black line
                 {
                     robot_state = LEFT;
                     theta = 0.0;
                 }
                 
                 else if (leftIR_data == false && centerIR_data == true && rightIR_data == true) //if the right & center gpio on the black line
+                {
+                    robot_state = RIGHT;
+                    theta = 0.0;
+                }
+
+                else if (leftIR_data == false && centerIR_data == false && rightIR_data == true) //if the right gpio on the black line
                 {
                     robot_state = RIGHT;
                     theta = 0.0;
@@ -294,20 +238,15 @@ int main()
                     //can add reset wheel encoders here before going into junction
                 }
 
-                else //anything else
-                {
-                    robot_state = WAIT;
-                }
-
             break;
 
             case LEFT: //110
                 MotorPower(&motors, -50, 50); //turn left
 
                 //Transition condition
-                if (abs(theta) >= turn_degrees) //Turn until theta = 90.0 degrees 
+                if (abs(theta) >= turn_right) //Turn until theta = 90.0 degrees 
                 {
-                    robot_state = WAIT;
+                    robot_state = FORWARD;
                 }
 
             break;
@@ -316,9 +255,9 @@ int main()
                 MotorPower(&motors, 50, -50); //turn right
 
                 //Transition condition
-                if (abs(theta) >= turn_degrees) //Turn until theta = 90.0 degrees 
+                if (abs(theta) >= turn_clockwise) //Turn until theta = 90.0 degrees 
                 {
-                    robot_state = WAIT;
+                    robot_state = FORWARD;
                 }
 
             break;
@@ -347,22 +286,23 @@ int main()
                         
                         //replace this to stop at junction, but test this out to see if it works
 
-                        MotorPower(&motors, 50, -50); //turn right
-                        if (abs(theta) >= turn_around) //keep turning until it has turned 180 degrees
-                        {
-                           //Reset Wheel Encoder Counts
-                            right.setZero();
-                            left.setZero();
-                                
-                            MotorPower(&motors, 100, 100); //move forward
+                        robot_state = STOP;
 
-                            //Transition condition
-                            if(leftDistance >= 25 && rightDistance >= 25) //go forward about an inch
-                            {
-                                robot_state = WAIT;
-                            }
+                        // if (abs(theta) >= turn_around) //keep turning until it has turned 180 degrees
+                        // {
+                        //    //Reset Wheel Encoder Counts
+                        //     right.setZero();
+                        //     left.setZero();
+                                
+                        //     MotorPower(&motors, 100, 100); //move forward
+
+                        //     //Transition condition
+                        //     if(leftDistance >= 25 && rightDistance >= 25) //go forward about an inch
+                        //     {
+                        //         robot_state = WAIT;
+                        //     }
                            
-                        }
+                        // }
                     }
 
                     else if (leftIR_data == true && centerIR_data == true && rightIR_data == true) //if all are still on black
