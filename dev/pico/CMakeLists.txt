@@ -114,6 +114,8 @@ make_exec(line_following3 algorithms/line_following3.cpp)
 make_exec(turn algorithms/turn.cpp)
 make_exec(turn2 algorithms/turn2.cpp)
 make_exec(move algorithms/move.cpp)
+make_exec(move2 algorithms/move2.cpp)
+make_exec(line algorithms/line.cpp)
 make_exec(object algorithms/object.cpp)
 
 #Examples

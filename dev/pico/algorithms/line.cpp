@@ -1,4 +1,4 @@
-//line following with object detection
+//final line following 
 #include "rcc_stdlib.h"
 using namespace std;
 
@@ -18,10 +18,7 @@ typedef enum {
     OBJECT_STOP
 } object_state_t;
 
-// //Servo
-// const int MIN_ANGLE = 37;
-const int MID_ANGLE = 50;
-// const int MAX_ANGLE = 62;
+const int MID_ANGLE = 50; //servo mid angle
 
 int main() {
     stdio_init_all();
@@ -57,6 +54,7 @@ int main() {
     //counts
     const int target_counts = 50; //the number of counts needed to travel forward
 
+    //Initial States
     robot_state_t robot_state = FORWARD;
     object_state_t object_state = UNDETECTED;
 
@@ -65,21 +63,11 @@ int main() {
         bool centerIR_data = gpio_get(CENTER_IR_SENSOR);
         bool rightIR_data = gpio_get(RIGHT_IR_SENSOR);
 
-        // int angle;                           // position of servo 
-
-        // //Linear Distance for Odom
-        // float leftDistance = linear_distance(left.getCount());
-        // float rightDistance = linear_distance(right.getCount());
-
-        // //User Linear Distance Wanted
-        // float userDistance = distance_convertor(targetDistance);
-
         distance = getFastReading(&lidar);
 
         //output
-        cout << "distance: " << distance << "\n";
+        cout << "distance: " << distance << "\n"; //Lidar
         cout << "left count: " << left.getCount() <<  " | right count: " << right.getCount() << "\n"; //Odom
-        cout << robot_state << "\n\n";
 
         // State Machines
         switch (robot_state) {
@@ -113,17 +101,11 @@ int main() {
             break;
 
             case JUNCTION:  // 111 or 101
+                // Indication at Junction
                 cout << "JUNCTION \n";
 
                 MotorPower(&motors, 0, 0); //stop
-
-                for (int i = 0; i < 3; i++)  // blink LED 3 times
-                {
-                    cyw43_arch_gpio_put(0, !cyw43_arch_gpio_get(0));  // blinks LED (indicating stopped at Junction)
-                    sleep_ms(300);
-                }
-                cyw43_arch_gpio_put(0, true);
-                
+        
                 //Reset Wheel Encoder Counts before going into drive
                 right.setZero();
                 left.setZero();
@@ -148,6 +130,7 @@ int main() {
                 MotorPower(&motors, 0, 0); //stop
             break;
         
+
         //Object Detection
         switch (object_state) {
                 case UNDETECTED:
@@ -161,14 +144,6 @@ int main() {
                     cout << "DETECTED \n\n";
 
                     MotorPower(&motors, 0, 0); //stop
-
-                    // Indication of Object Detection
-                    // for (int i = 0; i < 3; i++)  // blink LED 3 times
-                    // {
-                    //     cyw43_arch_gpio_put(0, !cyw43_arch_gpio_get(0));  // blinks LED
-                    //     sleep_ms(300);
-                    // }
-                    // cyw43_arch_gpio_put(0, true);
 
                     robot_state = LEFT;  // can make this RIGHT (junction goes left as well)
                     object_state = UNDETECTED;
