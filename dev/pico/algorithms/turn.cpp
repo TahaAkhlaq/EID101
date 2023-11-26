@@ -42,7 +42,7 @@ int main(void)
 
     //Turning Right and Left
     const double turn_counterclockwise = 1 * 65.0; //may need to change this
-    const double turn_clockwise = 3 * -65.0; //may need to change this
+    const double turn_clockwise = 1 * -65.0; //may need to change this
 
     //Intial Robot States
     robot_state_t robot_state = WAIT;
@@ -76,7 +76,7 @@ int main(void)
 
             case TURN:
 
-                MotorPower(&motors, 0, 50); //rotate counterclockwise
+                MotorPower(&motors, 80, 0); //rotate counterclockwise
 
                 if(theta >= turn_counterclockwise) //rotate 
                 { 

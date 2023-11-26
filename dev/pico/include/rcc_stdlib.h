@@ -30,6 +30,8 @@
 // include here and add to Cmake in custom_libs and add to main Cmake then include stdlib.h in the main.c file 
 //#include "custom_libs/rotate.h"
 #include "custom_libs/pins.h"
+#include "custom_libs/ir_sensors.h"
+#include "custom_libs/odom.h"
 
 #define ARRAYSIZE(X) (sizeof(X) / sizeof((X)[0]))
 

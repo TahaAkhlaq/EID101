@@ -46,6 +46,8 @@ int main() {
         case UNDETECTED:
             cout << "UNDETECTED: \n\n";
 
+            MotorPower (&motors, 80, 77);
+
             for (angle = MIN_ANGLE; angle <= MAX_ANGLE; angle++) {
                 ServoPosition(&s3, angle);
                 sleep_ms(20); 

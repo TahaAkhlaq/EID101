@@ -8,20 +8,6 @@ typedef enum {
     BACKWARD,//state 3
 } robot_state_t;
 
-//Odom
-float linear_distance(unsigned long count)
-{
-  return  (WHEEL_DIAM * PI * count) / (CPR * SLOTS); //I defined WHEEL_DIAM and PI globally 
-  //20 is about a foot or about 300 mm 
-}
-
-//Distance
-float distance_convertor(float userDistance)
-{
-    // 1 = 18.5mm
-    return (userDistance / 18.5); //converts to mm
-}
-
 int main(void)
 {
     stdio_init_all();
@@ -44,22 +30,21 @@ int main(void)
     Right_Odom right;
 
     //distance
-    int targetDistance = 300; //the distance traveled in mm
-
-    //Counter for the number of cycles
-    int cycles = 0;
+    const int targetDistance = 300; //the distance traveled in mm
+    const int number_cycles = 3;
+    int cycles_completed = 0;
 
     while(true)
     {   
-        //Linear Distance for Odom
-        float leftDistance = linear_distance(left.getCount());
-        float rightDistance = linear_distance(right.getCount());
+        // //Linear Distance for Odom
+        // const float leftDistance = linear_distance(left.getCount());
+        // const float rightDistance = linear_distance(right.getCount());
 
         //User Linear Distance Wanted
-        float userDistance = distance_convertor(targetDistance);
+        const float distance_ticks = distance_convertor(targetDistance);
 
         //debugging
-        cout << "left distance: " << leftDistance <<  " | right distance: " << rightDistance << "\n"; //Odom
+        // cout << "left distance: " << leftDistance <<  " | right distance: " << rightDistance << "\n"; //Odom
         cout << "left count: " << left.getCount() <<  " | right count: " << right.getCount() << "\n"; //Odom
         cout << robot_state << "\n\n";
 
@@ -82,49 +67,45 @@ int main(void)
 
             case FORWARD: //state 2
 
-                MotorPower(&motors, 100, 97); //both at full power
+                MotorPower(&motors, 80, 80); //both at full power
 
-                if(leftDistance >= userDistance && rightDistance >= userDistance) //go forward about a foot
+                if(right.getCount() >= distance_ticks) //go forward
                 {
                     MotorPower(&motors, 0, 0);
 
                     //Reset Wheel Encoder Counts before going into drive
                     right.setZero();
                     left.setZero();
-
-                    sleep_ms(300);
-
+                    sleep_ms(500);
                     robot_state = BACKWARD;
                 }
                             
             break; 
 
-        case BACKWARD: // state 2
-            MotorPower(&motors, -100, -97); // both at full power in reverse
+            case BACKWARD: // state 2
+                MotorPower(&motors, -80, -80); // both at full power in reverse
 
-            // Assuming your target distance is in millimeters
-            if (leftDistance >= userDistance && rightDistance >= userDistance)
-            {
-                // Reset Wheel Encoder Counts before going into drive
-                right.setZero();
-                left.setZero();
-
-                sleep_ms(300);
-
-                if (cycles < 2) // Check if it's the third cycle
+                // Assuming your target distance is in millimeters
+                if (left.getCount() >= distance_ticks)
                 {
-                    robot_state = FORWARD;
-                    cycles++;
+                    // Reset Wheel Encoder Counts before going into drive
+                    right.setZero();
+                    left.setZero();
+                    cycles_completed++;
+
+                    if (cycles_completed >= number_cycles) // Check if it's the third cycle
+                    {
+                        robot_state = WAIT;
+                        cycles_completed = 0;
+                    }
+                    else
+                    {
+                        sleep_ms(500);
+                        robot_state = FORWARD;
+                    }
                 }
-                else
-                {
-                    robot_state = WAIT;
-                    cycles = 0;
-                }
-            }
             break;
         }
-    }
-
+    }   
     return 0;
 }

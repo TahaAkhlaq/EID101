@@ -4,8 +4,5 @@
 #define CENTER_IR_SENSOR 2
 #define LEFT_IR_SENSOR 3
 
-//--ODOM--//
-#define WHEEL_DIAM 80
-#define PI 3.14159
-#define SLOTS 20
-#define CPR 40
+#define FRONT_SERVO 19
+#define BACK_SERVO 20

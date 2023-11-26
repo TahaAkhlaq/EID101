@@ -1,4 +1,4 @@
-//line following with object detection
+//line following 3 is just line following
 #include "rcc_stdlib.h"
 using namespace std;
 
@@ -10,18 +10,6 @@ typedef enum {
     JUNCTION,  // state 4 (111 or 101)
     ROBOT_STOP //state 5 (continuation of Junction)
 } robot_state_t;
-
-// Object Detection
-typedef enum {
-    UNDETECTED,
-    DETECTED,
-    OBJECT_STOP
-} object_state_t;
-
-//Servo
-const int MIN_ANGLE = 37;
-const int MID_ANGLE = 50;
-const int MAX_ANGLE = 62;
 
 int main() {
     stdio_init_all();
@@ -37,28 +25,14 @@ int main() {
     //IR setup
     init_ir();
 
-    // Lidar setup
-    rcc_init_i2c();         // setup pico i2c
-    VL53L0X lidar;           // class
-    rcc_init_lidar(&lidar);  // setup lidar
-
-    // Servo setup
-    Servo s3;                            // struct
-    ServoInit(&s3, 18, false, MID_ANGLE);       // setup on pin 18
-    ServoOn(&s3);                        // enables PWM
-
-    uint16_t distance;                   // lidar variable
-    uint16_t target_distance = 200;     // distance of the object
-
     //Odom setup
     Left_Odom left;
     Right_Odom right;
 
     //distance
-    const int targetDistance = 50; //the distance traveled in mm
+    const int targetDistance = 20; //the distance traveled in mm
 
     robot_state_t robot_state = FORWARD;
-    object_state_t object_state = UNDETECTED;
 
     while (true) {
         bool leftIR_data = gpio_get(LEFT_IR_SENSOR);
@@ -74,17 +48,14 @@ int main() {
         //User Linear Distance Wanted
         float userDistance = distance_convertor(targetDistance);
 
-        distance = getFastReading(&lidar);
-
         //output
-        cout << "distance: " << distance << "\n";
         cout << "left distance: " << leftDistance <<  " | right distance: " << rightDistance << "\n"; //Odom
 
         // State Machines
         switch (robot_state) {
             case FORWARD:  // 010
                 cout << "FORWARD \n";
-                MotorPower(&motors, 80, 77);  // make it so that it goes straight, we know that 100, 97 is straight
+                MotorPower(&motors, 60, 58);  // make it so that it goes straight, we know that 100, 97 is straight
 
                 if ((leftIR_data && centerIR_data && !rightIR_data) ||
                     (leftIR_data && !centerIR_data && !rightIR_data))  // left turn
@@ -93,51 +64,13 @@ int main() {
                     (rightIR_data && !centerIR_data && !leftIR_data))  // right turn
                     robot_state = RIGHT;
                 if ((leftIR_data && centerIR_data && rightIR_data) ||
-                    (rightIR_data && !centerIR_data && leftIR_data))  // junction
+                    (rightIR_data && !centerIR_data && leftIR_data)){  // junction
+                    //Reset Wheel Encoder Counts 
+                    right.setZero();
+                    left.setZero();
                     robot_state = JUNCTION;
-
-                switch (object_state) {
-                    case UNDETECTED:
-                        cout << "UNDETECTED \n\n";
-
-                        for (angle = MIN_ANGLE; angle <= MAX_ANGLE; angle++) {
-                            ServoPosition(&s3, angle);
-                            sleep_ms(20);
-                        }
-
-                        for (angle = MAX_ANGLE; angle >= MIN_ANGLE; angle--) {
-                            ServoPosition(&s3, angle);
-                            sleep_ms(20);
-                        }
-
-                        if (distance <= target_distance)
-                            object_state = DETECTED;
-                    break;
-
-                    case DETECTED:
-                        cout << "DETECTED \n\n";
-                        ServoPosition(&s3, MID_ANGLE);
-                        MotorPower(&motors, 0, 0); //stop
-
-                        // Indication of Object Detection
-                        for (int i = 0; i < 3; i++)  // blink LED 3 times
-                        {
-                            cyw43_arch_gpio_put(0, !cyw43_arch_gpio_get(0));  // blinks LED
-                            sleep_ms(300);
-                        }
-                        cyw43_arch_gpio_put(0, true);
-
-                        robot_state = LEFT;  // can make this RIGHT
-                        object_state = UNDETECTED;
-
-                    break;
-
-                    case OBJECT_STOP: //can only come here from Junction
-                        cout << "STOP OBJECT \n\n";
-                        ServoPosition(&s3, 50);
-                    break;
-                }
-                
+                    } 
+                    
             break;
 
             case LEFT:  // 110 or 100
@@ -159,25 +92,20 @@ int main() {
 
                 MotorPower(&motors, 0, 0); //stop
 
-                for (int i = 0; i < 3; i++)  // blink LED 3 times
-                {
-                    cyw43_arch_gpio_put(0, !cyw43_arch_gpio_get(0));  // blinks LED (indicating stopped at Junction)
-                    sleep_ms(300);
-                }
-                cyw43_arch_gpio_put(0, true);
-                
-                //Reset Wheel Encoder Counts before going into drive
-                right.setZero();
-                left.setZero();
+                // for (int i = 0; i < 3; i++)  // blink LED 3 times
+                // {
+                //     cyw43_arch_gpio_put(0, !cyw43_arch_gpio_get(0));  // blinks LED (indicating stopped at Junction)
+                //     sleep_ms(300);
+                // }
+                // cyw43_arch_gpio_put(0, true);
 
                 MotorPower(&motors, 100, 97); //drive
-                if(leftDistance >= userDistance && rightDistance >= userDistance) //go forward for a distance
+                if(leftDistance >= userDistance || rightDistance >= userDistance) //go forward for a distance
                 {   
                     MotorPower(&motors, 0, 0); //stop
 
                     if (leftIR_data && centerIR_data && rightIR_data) //if all on black
                     robot_state = ROBOT_STOP;
-                    object_state = OBJECT_STOP;
 
                     if (!(leftIR_data && centerIR_data && rightIR_data)) //if all are on white
                     robot_state = LEFT; //can make this RIGHT
